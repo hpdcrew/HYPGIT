@@ -3,10 +3,15 @@ cimport cython
 from cpython cimport array
 import matplotlib as pl
 from math import sqrt
+import datetime
+import time
+import math
+import random
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from multiprocessing.pool import ThreadPool
 import numpy as np
+from multiprocessing.pool import ThreadPool
 
 
 class DATA:
@@ -432,7 +437,10 @@ class alpha_generator:
 		self.insample = self.__get_features()
 		self.outsample = []
 		self.returns_out = []
-		self.number_of_stocks = self.insample[0].shape[1]
+		self.number_of_stocks = len(self.insample[0][0, :])
+		self.a = -20
+		self.b = 20
+		self.logfiles = ''
 
 	def __get_features(self):
 		cdef int i
@@ -471,7 +479,31 @@ class alpha_generator:
 		self.returns = returns
 		return list_of_features
 
-	def out_linear_model(self, combination, plot = False, directory_of_plot = ''):
+	def out_linear_model(self, combination):
+		cdef array.array PnL = array.array('d',[])
+		cdef array.array returns = array.array('d',[])
+		cdef array.array weights = array.array('d',[])
+		cdef array.array equity = array.array('d',[])
+		cdef double Sharp
+		cdef int j
+		cdef int i
+		cdef double CASH = 20000000
+		output = []
+		for i in xrange(len(self.returns)):
+			returns = array.array('d', [])
+			weights = scaling(self.__alpha(combination, i))
+			for j in xrange(len(self.returns[i])):
+				returns.append(weights[j]*CASH*self.returns[i, j])
+			PnL.append(sum(returns))
+		Sharp = sqrt(float(len(PnL)))*E(PnL)/var(PnL)
+		equity.append(0)
+		for i in xrange(len(PnL)):
+			equity.append(equity[i] + PnL[i])
+		output.append(abs(Sharp))
+		output.append(equity)
+		return output
+
+	def plot_linear_model(self, combination, str directory_of_plot):
 		cdef array.array PnL = array.array('d',[])
 		cdef array.array returns = array.array('d',[])
 		cdef array.array weights = array.array('d',[])
@@ -483,23 +515,18 @@ class alpha_generator:
 		for i in xrange(len(self.returns)):
 			returns = array.array('d', [])
 			weights = scaling(self.__alpha(combination, i))
-			for j in xrange(len(self.returns[i, :])):
+			for j in xrange(len(self.returns[i])):
 				returns.append(weights[j]*CASH*self.returns[i, j])
 			PnL.append(sum(returns))
-		Sharp = sqrt(float(len(PnL)))*E(PnL)/var(PnL)
 
 		equity.append(0)
 		for i in xrange(len(PnL)):
 			equity.append(equity[i] + PnL[i])
 
-		if plot == True:
-			plt.figure(figsize=(16,12))
-			plot = plt.plot(equity)
-			plt.text(1,max(equity)-4,'Sharp='+str(Sharp))
-			plt.savefig(directory_of_plot)
-			return Sharp
-		else:
-			return Sharp
+		plt.figure(figsize=(16,12))
+		plot = plt.plot(equity)
+		plt.text(1,max(equity)-4,'Sharp='+str(Sharp))
+		plt.savefig(directory_of_plot)
 
 	def __alpha(self, combination, int day):
 		cdef int i
@@ -510,16 +537,171 @@ class alpha_generator:
 		for i in xrange(self.number_of_stocks):
 			curr_result = 0
 			for j in xrange(len(combination)):
-				feature_j = self.insample[j]
-				curr_result = curr_result + combination[j]*feature_j[day, i]
+				curr_result = curr_result + combination[j]*self.insample[j][day, i]
 			alpha.append(curr_result)
 		return alpha
 
-	def 
+	def train_linear_model(self, double T_0, logfiles, double a = -50, double b = 50, console = True):
+		cdef int i = 0
+		cdef int j
+		cdef int k = 0
+		cdef str string
+		cdef double D = float(len(self.insample))
+		cdef int size = len(self.insample)
+		cdef double r = random.random()
+		cdef double T = T_0
+		cdef double E_1
+		cdef double E_2
+		cdef array.array x = random_vector(size)
+		cdef array.array PnL = array.array('d', [])
+		cdef array.array x_1
+		cdef array.array x_2
+		solutions = []
+		cdef str name  = logfiles + 'linear_model_train_logs' + datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y") + str(random.randint(0, 500))+ '.csv'
+
+		E_1 = self.out_linear_model(x)[0]
+
+		string = 'feature' + str(self.featureslist[0])
+		for j in xrange(1, len(self.featureslist)):
+			if j != len(self.featureslist) - 1:
+				string = string + ';' + 'feature' + str(self.featureslist[j])
+			else:
+				string = string + ';' + 'feature' + str(self.featureslist[j]) + ';' + 'Sharp' + '\n'
+
+		logs = open(name, 'wb')
+		logs.write(string)
+		logs.close()
+		while T > 0.04:
+
+			x_1 = new_solution(x, T, a, b)
+			E_2 = self.out_linear_model(x_1)[0]
+
+			while (r > Gibbs(E_1, E_2, T)) or(abs(E_1 - E_2) < 1e-10) :
+				x_1 = new_solution(x, T, a, b)
+				E_2 = self.out_linear_model(x_1)[0]
+				r = random.random()
+			copy_array_2(x_1, x)
+			E_1 = E_2
+			if (E_1 > 1.5):
+				logs = open(name, 'a')
+				x_2 = array.array('d', [])
+				copy_array(x, x_2)
+				x_2.append(E_1)
+				logs.write(getline_from_array(x_2))
+				logs.close()
+				k = k + 1
+			if console == True:
+				print 'Sharp = ' + str(E_1)
+			i = i + 1
+			T = T_0*math.exp(-np.power(float(i), 1/D))*math.exp(-10/D)
 
 
 
 
 
 
-      
+def new_solution(x, double T, double a, double b):
+	cdef int i
+	cdef double r
+	cdef array.array x_1 = array.array('d', [])
+	for i in xrange(len(x)):
+		x_1.append(0)
+		r = random.random()
+		z = fast_density(r, T)
+		x_1[i] = x[i] + z*(b-a)
+		while (x_1[i] - a)*(b - x_1[i]) < 0:
+			r = random.random()
+			z = fast_density(r, T)
+			x_1[i] = x[i] + z*(b-a)
+	return x_1
+
+
+def Gibbs(double E_1, double E_2, double T):
+	return math.exp((E_2 - E_1)/T)
+
+
+def fast_density(double a, double T):
+	cdef double z = np.sign(a - 0.5)*T*(np.power((1 + 1/T), abs(2*a - 1)) - 1)
+	return z
+
+def random_vector(int size):
+	cdef int i
+	cdef array.array vector = array.array('d', [])
+
+	for i in xrange(size):
+		vector.append(20*(random.random() - 1))
+
+	return vector
+
+
+def random_vector_int(int size):
+	cdef int i
+	cdef array.array vector = array.array('i', [])
+
+	for i in xrange(size):
+		vector.append(random.randint(0, 15))
+
+	return vector
+
+
+def getline_from_array(array):
+	cdef int i
+	cdef str string = str(array[0])
+
+	for i in xrange(1, len(array)):
+		if i!= len(array) - 1:
+			string = string + ';' + str(array[i])
+		else:
+			string = string + ';' + str(array[i]) + '\n'
+
+	return string
+
+def copy_array(from_l , to_l):
+	cdef int i
+	for i in xrange(len(from_l)):
+		to_l.append(from_l[i])
+
+def copy_array_2(from_l , to_l):
+	cdef int i
+	for i in xrange(len(from_l)):
+		to_l[i] = from_l[i]
+
+def parallel_training_linear(int size, str directory, str logfiles, double a = -50, double b = 50):
+	cdef int i
+	generators = []
+
+	for i in xrange(size):
+		generator = alpha_generator(directory, random_vector_int(random.randint(3,8)))
+		generator.a = a
+		generator.b = b
+		generator.logfiles = logfiles
+		generators.append(generator)
+		print 'Creating the generators.......' + str(100*float(i+1)/float(size)) + '%'
+
+	print 'Start train models'
+	pool = ThreadPool(12)
+	pool.map(parallel_train, generators)
+	pool.close()
+	pool.join()
+
+
+def parallel_train(generator):
+
+	generator.train_linear_model(10, generator.logfiles, a = generator.a, b = generator.b)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
