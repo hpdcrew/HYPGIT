@@ -495,7 +495,7 @@ class alpha_generator:
 			for j in xrange(len(self.returns[i])):
 				returns.append(weights[j]*CASH*self.returns[i, j])
 			PnL.append(sum(returns))
-		Sharp = sqrt(float(len(PnL)))*E(PnL)/var(PnL)
+		Sharp = sqrt(float(252))*E(PnL)/var(PnL)
 		equity.append(0)
 		for i in xrange(len(PnL)):
 			equity.append(equity[i] + PnL[i])
@@ -582,7 +582,7 @@ class alpha_generator:
 				r = random.random()
 			copy_array_2(x_1, x)
 			E_1 = E_2
-			if (E_1 > 1.5):
+			if (E_1 > 0.9):
 				logs = open(name, 'a')
 				x_2 = array.array('d', [])
 				copy_array(x, x_2)
@@ -629,7 +629,7 @@ def random_vector(int size):
 	cdef array.array vector = array.array('d', [])
 
 	for i in xrange(size):
-		vector.append(20*(random.random() - 1))
+		vector.append(10*(random.random() - 1))
 
 	return vector
 
@@ -671,7 +671,7 @@ def parallel_training_linear(int size, str directory, str logfiles, double a = -
 	generators = []
 
 	for i in xrange(size):
-		generator = alpha_generator(directory, random_vector_int(random.randint(3,8)))
+		generator = alpha_generator(directory, random_vector_int(random.randint(6,10)))
 		generator.a = a
 		generator.b = b
 		generator.logfiles = logfiles
@@ -687,7 +687,7 @@ def parallel_training_linear(int size, str directory, str logfiles, double a = -
 
 def parallel_train(generator):
 
-	generator.train_linear_model(10, generator.logfiles, a = generator.a, b = generator.b)
+	generator.train_linear_model(2, generator.logfiles, a = generator.a, b = generator.b)
 
 
 
