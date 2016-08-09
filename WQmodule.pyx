@@ -1,6 +1,6 @@
 import os
 cimport cython
-from cpython cimport array
+from cpython.array cimport array
 import matplotlib as pl
 from math import sqrt
 import datetime
@@ -12,6 +12,15 @@ from matplotlib.backends.backend_pdf import PdfPages
 from multiprocessing.pool import ThreadPool
 import numpy as np
 from multiprocessing.pool import ThreadPool
+from libc.math cimport log as ln, pow, fabs, exp
+
+cdef inline int sign(double x):
+	if x > 0:
+		return 1
+	elif x < 0:
+		return -1
+	else:
+		return 0
 
 
 class DATA:
@@ -93,7 +102,7 @@ def scaling(array):
 		sum_abs = sum_abs + abs(array[i])
 	if sum_abs != 0:
 		for i in xrange(len(array)):
-			array[i] = array[i]/sum_abs
+			array[i] = array[i] / sum_abs
 		return array
 	else:
 		return array
@@ -107,7 +116,7 @@ cdef double E(array):
 		if array[i] != 0:
 			j = j + 1
 	
-	mean = mean/j
+	mean = mean / j
 	return mean
 
 cdef double var(array):
@@ -117,10 +126,10 @@ cdef double var(array):
 	cdef double mean = E(array)
 	for i in xrange(len(array)):
 		if array[i] != 0:
-			var = var + (array[i] - mean)*(array[i] - mean)
+			var = var + (array[i] - mean) * (array[i] - mean)
 			j = j + 1
 	
-	var = var/j
+	var = var / j
 	return sqrt(var)
 
 cdef double summ(array):
@@ -132,14 +141,14 @@ cdef double summ(array):
 
 def RB(close, openp, int begin):
 	cdef int i
-	cdef array.array rb = array.array('d',[])
+	cdef array rb = array('d',[])
 	for i in xrange(begin, len(close)):
 		rb.append(abs(close[i] - openp[i])/openp[i])
 	return rb
 
 def US(close, openp, high, int begin):
 	cdef int i
-	cdef array.array us = array.array('d',[])
+	cdef array us = array('d',[])
 	for i in xrange(begin, len(close)):
 		if (high[i] - openp[i]) != 0:
 			us.append((close[i] - openp[i])/(high[i] - openp[i]))
@@ -149,7 +158,7 @@ def US(close, openp, high, int begin):
 
 def LS(close, openp, low, int begin):
 	cdef int i
-	cdef array.array ls = array.array('d',[])
+	cdef array ls = array('d',[])
 	for i in xrange(begin, len(close)):
 		if (close[i] - low[i]) != 0:
 			ls.append((close[i] - openp[i])/(close[i] - low[i]))
@@ -159,7 +168,7 @@ def LS(close, openp, low, int begin):
 
 def HL(high, low, int begin):
 	cdef int i
-	cdef array.array hl = array.array('d',[])
+	cdef array hl = array('d',[])
 	for i in xrange(begin, len(high)):
 		hl.append((high[i] - low[i])/low[i])
 	return hl		
@@ -167,7 +176,7 @@ def HL(high, low, int begin):
 def EMA(signal, double n):
 	cdef int i
 	cdef double a = 2/(n+1)
-	cdef array.array ema = array.array('d',[])
+	cdef array ema = array('d',[])
 	ema.append(signal[0])
 	for i in xrange(1, len(signal)):
 		ema.append(ema[i-1] + a*(signal[i] - ema[i-1]))
@@ -175,12 +184,12 @@ def EMA(signal, double n):
 
 def DB4 (signal, int begin, filters = 'HnL'):
 	cdef int i
-	cdef array.array high = array.array('d', [-0.1830127/2, -0.3169873/2, 
+	cdef array high = array('d', [-0.1830127/2, -0.3169873/2, 
 		1.1830127/2, -0.6830127/2])
-	cdef array.array low = array.array('d', [0.6830127/2, 1.1830127/2,
+	cdef array low = array('d', [0.6830127/2, 1.1830127/2,
 		0.3169873/2, -0.1830127/2])
-	cdef array.array hpass = array.array('d', [])
-	cdef array.array lpass = array.array('d', [])
+	cdef array hpass = array('d', [])
+	cdef array lpass = array('d', [])
 	if filters == 'HnL':
 		hnl = []
 		for i in xrange(begin, len(signal)):
@@ -204,12 +213,12 @@ def DB6(signal, int begin, filters = 'HnL'):
 	cdef int j
 	cdef double sum_1
 	cdef double sum_2
-	cdef array.array low = array.array('d', [0.47046721/2, 1.14111692/2,
+	cdef array low = array('d', [0.47046721/2, 1.14111692/2,
 		0.650365/2, -0.19093442/2, -0.12083221/2, 0.0498175/2])
-	cdef array.array high = array.array('d', [low[5], -low[4], 
+	cdef array high = array('d', [low[5], -low[4], 
 		low[3], -low[2], low[1], -low[0]])
-	cdef array.array hpass = array.array('d', [])
-	cdef array.array lpass = array.array('d', [])
+	cdef array hpass = array('d', [])
+	cdef array lpass = array('d', [])
 
 	if filters == 'HnL':
 		hnl = []
@@ -247,13 +256,13 @@ def DB12(signal, int begin, filters = 'HnL'):
 	cdef int j
 	cdef double sum_1
 	cdef double sum_2
-	cdef array.array low = array.array('d', [0.15774243/2, 0.69950381/2,
+	cdef array low = array('d', [0.15774243/2, 0.69950381/2,
 		1.06226376/2, 0.44583132/2, -0.31998660/2, -0.18351806/2, 0.13788809/2,
 		0.03892321/2, -0.04466375/2, 7.83251152e-4/2, 6.75606236e-3/2, -1.52353381e-3/2])
-	cdef array.array high = array.array('d', [low[11], -low[10], 
+	cdef array high = array('d', [low[11], -low[10], 
 		low[9], -low[8], low[7], -low[6], low[5], -low[4], low[3], -low[2], low[1], -low[0]])
-	cdef array.array hpass = array.array('d', [])
-	cdef array.array lpass = array.array('d', [])
+	cdef array hpass = array('d', [])
+	cdef array lpass = array('d', [])
 
 	if filters == 'HnL':
 		hnl = []
@@ -290,7 +299,7 @@ def vwap(prices, volume, int n, int begin):
 	cdef int j
 	cdef double vwap_0 = 0
 	cdef double vol = 0
-	cdef array.array transform = array.array('d', [])
+	cdef array transform = array('d', [])
 	for j in xrange(begin - n ,begin):
 		vwap_0 = vwap_0 + prices[j]*volume[j]
 		vol = vol + volume[j]
@@ -307,7 +316,7 @@ def vwap(prices, volume, int n, int begin):
 
 def returns(prices, int n, int begin):
 	cdef int i
-	cdef array.array returns = array.array('d', [])
+	cdef array returns = array('d', [])
 	for i in xrange(begin, len(prices)):
 		returns.append(prices[i]/prices[i-n] - 1)
 	return returns
@@ -315,7 +324,7 @@ def returns(prices, int n, int begin):
 def sma(signal, int n, int begin):
 	cdef int i
 	cdef double ma_0 = 0
-	cdef array.array ma = array.array('d', [])
+	cdef array ma = array('d', [])
 	for i in xrange(n):
 		ma_0 = ma_0 + signal[begin - i]
 	ma_0 = ma_0/float(n)
@@ -331,8 +340,8 @@ def stddev(signal, int n, int begin):
 	cdef double std_0 = 0
 	cdef double a
 	cdef double b
-	cdef array.array std = array.array('d', [])
-	cdef array.array ma = sma(signal, n ,begin)
+	cdef array std = array('d', [])
+	cdef array ma = sma(signal, n ,begin)
 	for i in xrange(n):
 		std_0 = std_0 + (signal[begin - i] - ma[0])*(signal[begin - i] - ma[0])
 	std_0 = std_0/float(n)
@@ -353,9 +362,9 @@ def stddev(signal, int n, int begin):
 
 def meanreversion(signal, int n, int begin):
 	cdef int i
-	cdef array.array ma = sma(signal, n ,begin)
-	cdef array.array std = stddev(signal, n, begin)
-	cdef array.array mr = array.array('d', [])
+	cdef array ma = sma(signal, n ,begin)
+	cdef array std = stddev(signal, n, begin)
+	cdef array mr = array('d', [])
 	for i in xrange(begin, len(signal)):
 		if std[i-begin] > 0:
 			mr.append((signal[i] - ma[i-begin])/std[i-begin])
@@ -385,8 +394,8 @@ class alpha:
 
 
 	def simulation(self):
-		cdef array.array PnL = array.array('d',[])
-		cdef array.array returns = array.array('d',[])
+		cdef array PnL = array('d',[])
+		cdef array returns = array('d',[])
 		cdef int j
 		cdef int i
 		cdef double CASH = 20000000
@@ -394,13 +403,13 @@ class alpha:
 			weights = self.alphasignal(i-1)
 			if self.neutralization == 'yes':
 				weights = neutralization(scaling(weights))
-				returns = array.array('d', [])
+				returns = array('d', [])
 				for j in xrange(len(self.close[i])):
 					if self.close[i+self.delay][j] != 0 and self.close[i-1+self.delay][j] != 0:
 						returns.append(weights[j]*CASH*(self.close[i+self.delay][j]/self.close[i-1+self.delay][j] - 1))
 			else:
 				weights = scaling(weights)
-				returns = array.array('d', [])
+				returns = array('d', [])
 				for j in xrange(len(self.close[i])):
 					if self.close[i+self.delay][j] != 0 and self.close[i-1+self.delay][j] != 0:
 						returns.append(weights[j]*CASH*(self.close[i+self.delay][j]/self.close[i-1+self.delay][j] - 1))
@@ -412,7 +421,7 @@ class alpha:
 		cdef double Var = 0
 		cdef double Sharp
 		cdef int i
-		cdef array.array equity = array.array('d',[])
+		cdef array equity = array('d',[])
 		equity.append(0)
 		PnL = self.simulation()
 		for i in xrange(len(PnL)):
@@ -446,8 +455,8 @@ class alpha_generator:
 		cdef int i
 		cdef int j
 		cdef int k
-		cdef array.array rows
-		cdef array.array returns_1
+		cdef array rows
+		cdef array returns_1
 		list_of_features = []
 		returns = []
 		files = [file_name for file_name in os.listdir(self.directory) if '.csv' in file_name]
@@ -457,7 +466,7 @@ class alpha_generator:
 				file_1 = open(self.directory + 'insample' + str(j) + '.csv', 'r')
 				data = file_1.readlines()
 				row = data[self.featureslist[i]].split(';')
-				rows = array.array('d', [])
+				rows = array('d', [])
 				for k in xrange(len(row) - 1):
 					rows.append(float(row[k]))
 				feature.append(rows)
@@ -466,7 +475,7 @@ class alpha_generator:
 					file_2 = open(self.directory + 'returns' + str(j) + '.csv', 'r')
 					returns_0 = file_2.readlines()
 					string = returns_0[0].split(';')
-					returns_1 = array.array('d', [])
+					returns_1 = array('d', [])
 					for k in xrange(len(string) - 1):
 						returns_1.append(float(string[k]))
 					returns.append(returns_1)
@@ -480,17 +489,17 @@ class alpha_generator:
 		return list_of_features
 
 	def out_linear_model(self, combination):
-		cdef array.array PnL = array.array('d',[])
-		cdef array.array returns = array.array('d',[])
-		cdef array.array weights = array.array('d',[])
-		cdef array.array equity = array.array('d',[])
+		cdef array PnL = array('d',[])
+		cdef array returns = array('d',[])
+		cdef array weights = array('d',[])
+		cdef array equity = array('d',[])
 		cdef double Sharp
 		cdef int j
 		cdef int i
 		cdef double CASH = 20000000
 		output = []
 		for i in xrange(len(self.returns)):
-			returns = array.array('d', [])
+			returns = array('d', [])
 			weights = scaling(self.__alpha(combination, i))
 			for j in xrange(len(self.returns[i])):
 				returns.append(weights[j]*CASH*self.returns[i, j])
@@ -504,16 +513,16 @@ class alpha_generator:
 		return output
 
 	def plot_linear_model(self, combination, str directory_of_plot):
-		cdef array.array PnL = array.array('d',[])
-		cdef array.array returns = array.array('d',[])
-		cdef array.array weights = array.array('d',[])
-		cdef array.array equity = array.array('d',[])
+		cdef array PnL = array('d',[])
+		cdef array returns = array('d',[])
+		cdef array weights = array('d',[])
+		cdef array equity = array('d',[])
 		cdef double Sharp
 		cdef int j
 		cdef int i
 		cdef double CASH = 20000000
 		for i in xrange(len(self.returns)):
-			returns = array.array('d', [])
+			returns = array('d', [])
 			weights = scaling(self.__alpha(combination, i))
 			for j in xrange(len(self.returns[i])):
 				returns.append(weights[j]*CASH*self.returns[i, j])
@@ -532,7 +541,7 @@ class alpha_generator:
 		cdef int i
 		cdef int j
 		cdef double curr_result
-		cdef array.array alpha = array.array('d',[])
+		cdef array alpha = array('d',[])
 
 		for i in xrange(self.number_of_stocks):
 			curr_result = 0
@@ -552,10 +561,10 @@ class alpha_generator:
 		cdef double T = T_0
 		cdef double E_1
 		cdef double E_2
-		cdef array.array x = random_vector(size)
-		cdef array.array PnL = array.array('d', [])
-		cdef array.array x_1
-		cdef array.array x_2
+		cdef array x = random_vector(size)
+		cdef array PnL = array('d', [])
+		cdef array x_1
+		cdef array x_2
 		solutions = []
 		cdef str name  = logfiles + 'linear_model_train_logs' + datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y") + str(random.randint(0, 500))+ '.csv'
 
@@ -576,7 +585,7 @@ class alpha_generator:
 			x_1 = new_solution(x, T, a, b)
 			E_2 = self.out_linear_model(x_1)[0]
 
-			while (r > Gibbs(E_1, E_2, T)) or(abs(E_1 - E_2) < 1e-10) :
+			while (r > Gibbs(E_1, E_2, T)) or (fabs(E_1 - E_2) < 1e-10):
 				x_1 = new_solution(x, T, a, b)
 				E_2 = self.out_linear_model(x_1)[0]
 				r = random.random()
@@ -584,7 +593,7 @@ class alpha_generator:
 			E_1 = E_2
 			if (E_1 > 0.9):
 				logs = open(name, 'a')
-				x_2 = array.array('d', [])
+				x_2 = array('d', [])
 				copy_array(x, x_2)
 				x_2.append(E_1)
 				logs.write(getline_from_array(x_2))
@@ -593,7 +602,7 @@ class alpha_generator:
 			if console == True:
 				print 'Sharp = ' + str(E_1)
 			i = i + 1
-			T = T_0*math.exp(-np.power(float(i), 1/D))*math.exp(-10/D)
+			T = T_0 * exp(-pow(float(i), 1/D)) * exp(-10 / D)
 
 
 
@@ -603,40 +612,40 @@ class alpha_generator:
 def new_solution(x, double T, double a, double b):
 	cdef int i
 	cdef double r
-	cdef array.array x_1 = array.array('d', [])
+	cdef array x_1 = array('d', [])
 	for i in xrange(len(x)):
 		x_1.append(0)
 		r = random.random()
 		z = fast_density(r, T)
-		x_1[i] = x[i] + z*(b-a)
-		while (x_1[i] - a)*(b - x_1[i]) < 0:
+		x_1[i] = x[i] + z * (b - a)
+		while (x_1[i] - a) * (b - x_1[i]) < 0:
 			r = random.random()
 			z = fast_density(r, T)
-			x_1[i] = x[i] + z*(b-a)
+			x_1[i] = x[i] + z * (b - a)
 	return x_1
 
 
 def Gibbs(double E_1, double E_2, double T):
-	return math.exp((E_2 - E_1)/T)
+	return exp((E_2 - E_1) / T)
 
 
 def fast_density(double a, double T):
-	cdef double z = np.sign(a - 0.5)*T*(np.power((1 + 1/T), abs(2*a - 1)) - 1)
+	cdef double z = sign(a - 0.5) * T * (pow((1 + 1 / T), fabs(2 * a - 1)) - 1)
 	return z
 
 def random_vector(int size):
 	cdef int i
-	cdef array.array vector = array.array('d', [])
+	cdef array vector = array('d', [])
 
 	for i in xrange(size):
-		vector.append(10*(random.random() - 1))
+		vector.append(10 * (random.random() - 1))
 
 	return vector
 
 
 def random_vector_int(int size):
 	cdef int i
-	cdef array.array vector = array.array('i', [])
+	cdef array vector = array('i', [])
 
 	for i in xrange(size):
 		vector.append(random.randint(0, 15))
