@@ -80,7 +80,7 @@ class DATA:
 							print files[i]
 						final_data[j].append(float(day_data[k]))
 						j = j + 1
-						day_data = data[day+1+j].split(',')
+						day_data = data[day + 1 + j].split(',')
 					break
 		return final_data
 
@@ -143,7 +143,7 @@ def RB(close, openp, int begin):
 	cdef int i
 	cdef array rb = array('d',[])
 	for i in xrange(begin, len(close)):
-		rb.append(abs(close[i] - openp[i])/openp[i])
+		rb.append(abs(close[i] - openp[i]) / openp[i])
 	return rb
 
 def US(close, openp, high, int begin):
@@ -151,7 +151,7 @@ def US(close, openp, high, int begin):
 	cdef array us = array('d',[])
 	for i in xrange(begin, len(close)):
 		if (high[i] - openp[i]) != 0:
-			us.append((close[i] - openp[i])/(high[i] - openp[i]))
+			us.append((close[i] - openp[i]) / (high[i] - openp[i]))
 		else:
 			us.append(0)
 	return us
@@ -170,16 +170,16 @@ def HL(high, low, int begin):
 	cdef int i
 	cdef array hl = array('d',[])
 	for i in xrange(begin, len(high)):
-		hl.append((high[i] - low[i])/low[i])
+		hl.append((high[i] - low[i]) / low[i])
 	return hl		
 
 def EMA(signal, double n):
 	cdef int i
-	cdef double a = 2/(n+1)
+	cdef double a = 2 / (n + 1)
 	cdef array ema = array('d',[])
 	ema.append(signal[0])
 	for i in xrange(1, len(signal)):
-		ema.append(ema[i-1] + a*(signal[i] - ema[i-1]))
+		ema.append(ema[i - 1] + a * (signal[i] - ema[i - 1]))
 	return ema
 
 def DB4 (signal, int begin, filters = 'HnL'):
@@ -193,18 +193,18 @@ def DB4 (signal, int begin, filters = 'HnL'):
 	if filters == 'HnL':
 		hnl = []
 		for i in xrange(begin, len(signal)):
-			hpass.append(high[0]*signal[i] + high[1]*signal[i-1] + high[2]*signal[i-2] + high[3]*signal[i-3])
-			lpass.append(low[0]*signal[i] + low[1]*signal[i-1] + low[2]*signal[i-2] + low[3]*signal[i-3])
+			hpass.append(high[0] * signal[i] + high[1] * signal[i - 1] + high[2] * signal[i - 2] + high[3] * signal[i - 3])
+			lpass.append(low[0] * signal[i] + low[1] * signal[i - 1] + low[2] * signal[i - 2] + low[3] * signal[i - 3])
 		hnl.append(lpass)
 		hnl.append(hpass)
 		return hnl
 	if filters == 'low':
 		for i in xrange(begin, len(signal)):
-			lpass.append(low[0]*signal[i] + low[1]*signal[i-1] + low[2]*signal[i-2] + low[3]*signal[i-3])		
+			lpass.append(low[0] * signal[i] + low[1] * signal[i - 1] + low[2] * signal[i - 2] + low[3] * signal[i - 3])		
 		return lpass
 	if filters == 'high':
 		for i in xrange(begin, len(signal)):
-			hpass.append(high[0]*signal[i] + high[1]*signal[i-1] + high[2]*signal[i-2] + high[3]*signal[i-3])
+			hpass.append(high[0] * signal[i] + high[1] * signal[i - 1] + high[2] * signal[i - 2] + high[3] * signal[i - 3])
 		return hpass
 
 
@@ -226,8 +226,8 @@ def DB6(signal, int begin, filters = 'HnL'):
 			sum_1 = 0
 			sum_2 = 0
 			for j in xrange(len(high)):
-				sum_1 = sum_1 + high[j]*signal[i-j]
-				sum_2 = sum_2 + low[j]*signal[i-j]
+				sum_1 = sum_1 + high[j] * signal[i - j]
+				sum_2 = sum_2 + low[j] * signal[i - j]
 			hpass.append(sum_1)
 			lpass.append(sum_2)
 		hnl.append(lpass)
@@ -238,7 +238,7 @@ def DB6(signal, int begin, filters = 'HnL'):
 		for i in xrange(begin, len(signal)):
 			sum_2 = 0
 			for j in xrange(len(high)):
-				sum_2 = sum_2 + low[j]*signal[i-j]
+				sum_2 = sum_2 + low[j] * signal[i - j]
 			lpass.append(sum_2)				
 		return lpass
 
@@ -246,7 +246,7 @@ def DB6(signal, int begin, filters = 'HnL'):
 		for i in xrange(begin, len(signal)):
 			sum_1 = 0
 			for j in xrange(len(high)):
-				sum_1 = sum_1 + high[j]*signal[i-j]
+				sum_1 = sum_1 + high[j] * signal[i - j]
 			hpass.append(sum_2)	
 		return hpass
 
@@ -270,8 +270,8 @@ def DB12(signal, int begin, filters = 'HnL'):
 			sum_1 = 0
 			sum_2 = 0
 			for j in xrange(len(high)):
-				sum_1 = sum_1 + high[j]*signal[i-j]
-				sum_2 = sum_2 + low[j]*signal[i-j]
+				sum_1 = sum_1 + high[j] * signal[i - j]
+				sum_2 = sum_2 + low[j] * signal[i - j]
 			hpass.append(sum_1)
 			lpass.append(sum_2)
 		hnl.append(lpass)
@@ -282,7 +282,7 @@ def DB12(signal, int begin, filters = 'HnL'):
 		for i in xrange(begin, len(signal)):
 			sum_2 = 0
 			for j in xrange(len(high)):
-				sum_2 = sum_2 + low[j]*signal[i-j]
+				sum_2 = sum_2 + low[j] * signal[i - j]
 			lpass.append(sum_2)				
 		return lpass
 
@@ -290,7 +290,7 @@ def DB12(signal, int begin, filters = 'HnL'):
 		for i in xrange(begin, len(signal)):
 			sum_1 = 0
 			for j in xrange(len(high)):
-				sum_1 = sum_1 + high[j]*signal[i-j]
+				sum_1 = sum_1 + high[j] * signal[i - j]
 			hpass.append(sum_2)	
 		return hpass
 
@@ -301,15 +301,15 @@ def vwap(prices, volume, int n, int begin):
 	cdef double vol = 0
 	cdef array transform = array('d', [])
 	for j in xrange(begin - n ,begin):
-		vwap_0 = vwap_0 + prices[j]*volume[j]
+		vwap_0 = vwap_0 + prices[j] * volume[j]
 		vol = vol + volume[j]
 	for i in xrange(begin, len(prices)):
-		vwap_0 = vwap_0 - prices[i-n]*volume[i-n] + prices[i]*volume[i]
-		vol = vol - volume[i-n] + volume[i]
+		vwap_0 = vwap_0 - prices[i - n] * volume[i - n] + prices[i] * volume[i]
+		vol = vol - volume[i - n] + volume[i]
 		if volume[i] == 0:
 			print 'da'
 		if vol == 0:
-			transform.append(transform[i-begin - 1])
+			transform.append(transform[i - begin - 1])
 		else:
 			transform.append(vwap_0/vol)
 	return transform
@@ -318,7 +318,7 @@ def returns(prices, int n, int begin):
 	cdef int i
 	cdef array returns = array('d', [])
 	for i in xrange(begin, len(prices)):
-		returns.append(prices[i]/prices[i-n] - 1)
+		returns.append(prices[i] / prices[i - n] - 1)
 	return returns
 
 def sma(signal, int n, int begin):
@@ -327,10 +327,10 @@ def sma(signal, int n, int begin):
 	cdef array ma = array('d', [])
 	for i in xrange(n):
 		ma_0 = ma_0 + signal[begin - i]
-	ma_0 = ma_0/float(n)
+	ma_0 = ma_0 / float(n)
 	ma.append(ma_0)
 	for i in xrange(begin + 1, len(signal)):
-		ma_0 = ma_0 - signal[i - 1 - n]/float(n) + signal[i]/float(n)
+		ma_0 = ma_0 - signal[i - 1 - n] / float(n) + signal[i] / float(n)
 		ma.append(ma_0)
 	return ma
 
@@ -343,15 +343,15 @@ def stddev(signal, int n, int begin):
 	cdef array std = array('d', [])
 	cdef array ma = sma(signal, n ,begin)
 	for i in xrange(n):
-		std_0 = std_0 + (signal[begin - i] - ma[0])*(signal[begin - i] - ma[0])
-	std_0 = std_0/float(n)
+		std_0 = std_0 + (signal[begin - i] - ma[0]) * (signal[begin - i] - ma[0])
+	std_0 = std_0 / float(n)
 	if std_0 > 1e-5:
 		std.append(sqrt(std_0))
 	else:
 		std.append(0)
 	for i in xrange(begin + 1, len(signal)):
-		a = (signal[i - 1 - n] - ma[i - begin - 1])*(signal[i - 1 - n] - ma[i - begin - 1])/float(n)
-		b = (signal[i] - ma[i - begin])*(signal[i] - ma[i - begin])/float(n)
+		a = (signal[i - 1 - n] - ma[i - begin - 1])*(signal[i - 1 - n] - ma[i - begin - 1]) / float(n)
+		b = (signal[i] - ma[i - begin]) * (signal[i] - ma[i - begin]) / float(n)
 		std_0 = std_0 - a + b
 		if std_0 > 1e-5:
 			std.append(sqrt(std_0))
