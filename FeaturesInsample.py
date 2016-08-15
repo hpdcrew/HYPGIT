@@ -20,7 +20,7 @@ def SignsSignals(list_of_signal, begin):
 	for i in xrange(len(list_of_signal)-1):
 		sign = []
 		for j in xrange(begin, len(list_of_signal[i])):
-			sign.append(log(list_of_signal[i][j]/list_of_signal[i+1][j]))
+			sign.append(log(list_of_signal[i][j] / list_of_signal[i+1][j]))
 		signs.append(sign)
 		#print i
 	return np.array(signs)
